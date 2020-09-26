@@ -19,16 +19,11 @@ interlex-bulk-ingest gsheet <gsheet-name> <sheet-name>
 interlex-bulk-ingest -c in.csv out.csv
 interlex-bulk-ingest -g <gsheets name> <sheet name>
 ```
-    
-# Output
-    CSV - ingestion will need an output path for resulting CSV. 
-    Google Sheets - ingestion will update the sheet given automatically.
 
-# Sheet Example
+# Sheet Input Example
 | *label* | *type* | *synonyms* | *definition* | *comment* | *superclass* | *curie* | *preferred* |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | Brain | term | Synganglion, Encephalon | The part of the central nervous system contained within the cranium comprising the forebrain, midbrain, hindbrain, and metencephalon | Does not include retina. | ILX:0108124 | UBERON:0000062 | T |
-
 
 # Sheet Header Description:
 | *Column header* | *Description* |  
@@ -41,3 +36,17 @@ interlex-bulk-ingest -g <gsheets name> <sheet name>
 | superclass  |  Current entity the child element of the this superclass. |      
 | curie  |  Existing Curie from external source or ontology. |   
 | preferred  |  T/F if curie provided should be preferred ID. |
+
+# Sheet Successful Output:
+    CSV - ingestion will need an output path for resulting CSV. 
+    Google Sheets - ingestion will update the sheet given automatically.
+| *label* | *type* | *synonyms* | *definition* | *comment* | *superclass* | *curie* | *preferred* | *InterLex Fragment* | *InterLex IRI* | *success* | *error* |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Brain | term | Synganglion, Encephalon | The part of the central nervous system contained within the cranium comprising the forebrain, midbrain, hindbrain, and metencephalon | Does not include retina. | ILX:0108124 | UBERON:0000062 | T | ILX:0101431 | http://uri.interlex.org/base/ilx_0101431 | T | |
+
+# Sheet Failed Output:
+    CSV - ingestion will need an output path for resulting CSV. 
+    Google Sheets - ingestion will update the sheet given automatically.
+| *label* | *type* | *synonyms* | *definition* | *comment* | *superclass* | *curie* | *preferred* | *InterLex Fragment* | *InterLex IRI* | *success* | *error* | 
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Brain | term | Synganglion, Encephalon | The part of the central nervous system contained within the cranium comprising the forebrain, midbrain, hindbrain, and metencephalon | Does not include retina. | ILX:0108124 | UBERON:0000062 | T | | | F | Label [Brain] already added by User [Troy Sincomb] With InterLex ID [http://uri.interlex.org/base/ilx_0101431] |
