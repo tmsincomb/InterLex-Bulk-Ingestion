@@ -1,2 +1,42 @@
 # InterLex-Bulk-Ingestion
 Ingest entities from a CSV or Google Sheet and get the same mode of input back with additional columns added to know how it went.
+
+# Usage
+```bash
+interlex-bulk-ingest [-h | --help]
+interlex-bulk-ingest [-v | --version]
+interlex-bulk-ingest csv <infile> <outfile>
+interlex-bulk-ingest gsheet <gsheet-name> <sheet-name>
+```
+
+# Options
+```bash
+-h --help                      Display this help message
+-v --version                   Current version of file
+```
+# Example
+```bash
+interlex-bulk-ingest -c in.csv out.csv
+interlex-bulk-ingest -g <gsheets name> <sheet name>
+```
+    
+# Output
+    CSV - ingestion will need an output path for resulting CSV. 
+    Google Sheets - ingestion will update the sheet given automatically.
+
+# Sheet Example
+| label | type | synonyms | definition | comment | superclass | curie | preferred |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Brain | term | Synganglion, Encephalon | The part of the central nervous system contained within the cranium comprising the forebrain, midbrain, hindbrain, and metencephalon | Does not include retina. | ILX:0108124 | UBERON:0000062 | T |
+
+
+# Sheet Header Description:  
+| label  |  Entities preferred name.                                         |
+| --- | --- |
+| type  |  Entity type from the following:<br><li>"term" - general entity type<br><li>"TermSet" - term to act as a set of general entity types<br><li>"pde" - personal data element<br><li>"cde" - common data element<br><li>"annotation" - entity to connect 1 entity to a value <ul> EX. anntation "hasNarrowSynonym" where<br> "nail" -> "hasNarrowSynonym" -> "claw"</ul><li>"relationship" - entity to connect to 2 other entities <ul>EX. relationship "Is part of"<br>"Forebrain" -> "Is part of" -> "Brain"</ul> |
+| synonyms  |  Alternative names for the Entities label.                        |
+| definition  |  Detailed description of what this entity represents.             |
+| comment  |  Important curation notes.                                        |
+| superclass  |  Current entity the child element of the this superclass.         |      
+| curie  |  Existing Curie from external source or ontology.                 |   
+| preferred  |  T/F if curie provided should be preferred ID.                    |
