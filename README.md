@@ -1,6 +1,14 @@
 # InterLex-Bulk-Ingestion
 Ingest entities from a CSV or Google Sheet and get the same mode of input back with additional columns added to know how it went.
 
+# Requirements
+```
+python==3.7+
+pandas==1.1.2+
+ontquery==0.2.6+
+docopt==0.6.2+
+```
+
 # Installation
 ```bash
 git clone git@github.com:tmsincomb/InterLex-Bulk-Ingestion.git
