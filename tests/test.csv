@@ -1,0 +1,6 @@
+label,type,synonyms,definition,comment,superclass,curie,preferred
+brain,term,"Encephalon, Cerebro",Part of the central nervous system,Cannot live without it,ILX:0108124,FAKEPREFIX:796,True
+brain,term,"Encephalon, Cerebro",Part of the central nervous system,Cannot live without it,FALESUPER:0108124,UBERON:1234,True
+brain,term,"Encephalon, Cerebro",Part of the central nervous system,Cannot live without it,UBERON:9999999,UBERON:1234,True
+brain,term,"Encephalon, Cerebro",Part of the central nervous system,Cannot live without it,ILX:0108124,UBERON:12345,True
+label_125,term,"Encephalon, Cerebro",Part of the central nervous system,Cannot live without it,ILX:0108124,UBERON:1234569,True
