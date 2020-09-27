@@ -68,7 +68,7 @@ from docopt import docopt
 from ontquery.interlex import interlex_client
 import pandas as pd
 
-from pathing import pathing
+from .pathing import pathing
 
 VERSION = '0.1.2'
 
@@ -312,7 +312,7 @@ class IngestGSheet(Schema):
     pass
 
 
-if __name__ == '__main__':
+def main():
     doc = docopt(__doc__, version=VERSION) 
     ilx_cli = interlex_client('scicrunch.org') if doc['--production'] else interlex_client()
     ilx_cli = ilx_cli.ilx_cli  # Simple InterLex API
@@ -322,3 +322,6 @@ if __name__ == '__main__':
         df.to_csv(icsv.csv_out_path, index=False)
     elif doc['--gsheet']:
         pass
+
+if __name__ == '__main__':
+    main()
