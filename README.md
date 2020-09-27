@@ -20,8 +20,8 @@ pip install -e .
 ```bash
 interlex-bulk-ingest [-h | --help]
 interlex-bulk-ingest [-v | --version]
-interlex-bulk-ingest csv <infile> <outfile>
-interlex-bulk-ingest gsheet <gsheet-name> <sheet-name>
+interlex-bulk-ingest --csv <infile> <outfile>
+interlex-bulk-ingest --gsheet <gsheet-name> <sheet-name>
 ```
 
 # Options
