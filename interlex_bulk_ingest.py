@@ -62,6 +62,7 @@ Sheet Header Description:
     ---------------------------------------------------------------------------------------                                          
 """
 from IPython import embed
+from typing import Union, List, Dict
 
 from docopt import docopt
 from ontquery.interlex import interlex_client
@@ -69,61 +70,187 @@ import pandas as pd
 
 from pathing import pathing
 
-VERSION = '0.1.1'
+VERSION = '0.1.2'
 
 
 class Schema:
-    
-    class Error(Exception):
-        """Script could not complete."""
-    
-    class MissingHeader(Error):
-        """Missing Header."""
+
+    class MissingHeaders(Exception):
+        """Missing headers."""
+
+    class ExtraHeaders(Exception):
+        """Extra headers."""
 
     columns = ['label', 'type', 'synonyms', 'definition', 'comment', 'superclass', 'curie', 'preferred']
-    error = 'Label [{label}] already exists from User [{user}] where InterLex ID is [{ilx_id}]'
+    duplicate_error = 'Label [{label}] already exists from User [{user}] where InterLex ID is [{ilx_id}]'
 
-    def check_ingest_header(self, df: pd.DataFrame) -> None:
-        for column in df.columns:
-            if column not in self.columns:
-                raise ValueError(f'{column} is missing in sheet')
+    def check_header(self, columns: list) -> None:
+        """
+        Checks if header has extra column(s) or missing column(s).
 
-class IngestCSV(Schema):
+        Args:
+            columns (list): InterLex entity fields
 
-    def __init__(self, csv_in: str, csv_out: str, ilx_cli):
-        Schema.__init__(self)
+        Raises:
+            self.ExtraHeaders: Additional headers will break code
+            self.MissingHeaders: Missing headers will potentially break code
+        """
+        extra_columns = set(columns) - set(self.columns)
+        if extra_columns:
+            raise self.ExtraHeaders(str(sorted(extra_columns)))
+        missing_columns = set(self.columns) - set(columns)
+        if missing_columns:
+            raise self.MissingHeaders(str(sorted(missing_columns)))
+
+class Validity:
+
+    prefix_doesnt_exist = 'Curie {curie} does not have a prefix that exists in InterLex.'
+    curie_already_exists = 'Curie {curie} already exists with InterLex ID {ilx_id}'
+    superclass_doesnt_exist = 'Superclass {superclass} does not exist in InterLex.'
+    label_already_exists = 'Label {label} already exists with InterLex ID {ilx_id}'
+    synonym_already_exists = 'Synonym {synonym} already exists in InterLex with ID {ilx_id}'
+
+    def __init__(self, ilx_cli):
         self.ilx_cli = ilx_cli
         self.prefix2namespace = {d['prefix']: d['namespace'] 
                                  for d in self.ilx_cli._get('curies/catalog').json()['data'] 
                                  if d['prefix']}
-        self.csv_in_path = pathing(csv_in, new=False)
-        self.csv_out_path = pathing(csv_out, new=False).with_suffix('.csv')
-        self.csv_in_df = pd.read_csv(self.csv_in_path)
-        self.check_ingest_header(self.csv_in_df)
 
-    def check_if_duplicate(self, row):
-        # curie check
-        # embed()
-        result = self.ilx_cli.get_entity_from_curie(row.curie)
-        if result['ilx']:
-            return result
-        # label check 
-        result = self.ilx_cli._get('term/exists', params={'label': row.label, 'uid':ilx_cli.user_id}).json()['data']
-        if result:
-            return result[0]
-        
-    def expand_synonyms(self, synonyms):
-        synonyms = [syn.strip() for syn in synonyms.split(',')]
-        return synonyms
+    def check_curie_prefix(self, curie: str) -> None:
+        """
+        Checks InterLex curie catalog for known prefixes so we can expand it into a proper iri.
 
-    def check_curie(self, curie):
+        Args:
+            curie (str): iri prefix concatenated to an id with a colon i.e. pr
+
+        Returns:
+            None: If prefix exists.
+            str: If prefix not not exists.
+        """
         try:
             prefix, _id = curie.rsplit(':', 1)
             namespace = self.prefix2namespace[prefix]
         except:
-            return f'Curie {curie} does not have a prefix that exists in InterLex.'    
+            return self.prefix_doesnt_exist.format(curie=curie)  
     
-    def expand_curie(self, curie, preferred):
+    def check_curie_existence(self, curies: list) -> None:
+        """
+        If the curie exists this check fails.
+
+        Args:
+            curies (list): Existing Ids for the entity in the prefix:id format.
+
+        Returns:
+            None: If curie doesn't exist.
+            str: If curie does exist.
+        """
+        for curie in curies.split(','):
+            curie = curie.strip()
+            error = self.check_curie_prefix(curie)
+            if error: 
+                return error
+            result = self.ilx_cli.get_entity_from_curie(curie)
+            if result['ilx']: 
+                return self.curie_already_exists.format(curie=curie, ilx_id=result['ilx'])
+    
+    def check_superclass(self, superclass: str) -> None:
+        """
+        If superclass does not exist this check fails.
+
+        Args:
+            superclass (str): Parent of current entity in it's prefix:id format.
+
+        Returns:
+            None: If superclass exists.
+            str: If superclass doesn't exist.
+        """
+        if any([superclass.startswith(prefix) for prefix in ['ILX:', 'TMP:', 'ilx_', 'tmp_']]):
+            result = self.ilx_cli.get_entity(superclass)
+        else:
+            error = self.check_curie_prefix(superclass)
+            if error:
+                return error
+            result = self.ilx_cli.get_entity_from_curie(superclass)
+        if not result['ilx']:
+            return self.superclass_doesnt_exist.format(superclass=superclass)
+
+    def check_label_duplicate(self, label: str, uid: str = None) -> None:
+        """
+        If label already exists from the user, this check fails.
+
+        Args:
+            label (str): Entity preferred label.
+            uid (str, optional): User ID. Defaults to None.
+
+        Returns:
+            None: If label doesn't exist yet.
+            str: If label does exist.
+        """
+        result = self.ilx_cli._get('term/exists', params={'label': label, 'uid': uid or self.ilx_cli.user_id}).json()['data']
+        if result:
+            result = result[0]
+            return self.label_already_exists.format(label=result['label'], ilx_id=result['ilx'])
+        
+    def check_synonym_duplicates(self, synonyms: list, uid: str = None) -> None:
+        """
+        If synonym already exists from the user, this check fails.
+
+        Args:
+            synonym (str): Entity alternative label.
+            uid (str, optional): User ID. Defaults to None.
+
+        Returns:
+            None: If synonym doesn't exist yet.
+            str: If synonym does exist.
+        """
+        for synonym in synonyms:
+            params = {'label': synonym, 'uid': uid or self.ilx_cli.user_id}
+            result = self.ilx_cli._get('term/exists', params=params).json()['data']
+            if result:
+                result = result[0]
+                return self.synonym_already_exists.format(synonym=result['label'], ilx_id=result['ilx'])      
+
+
+class IngestCSV(Schema, Validity):
+    """
+    InterLex entity ingestion through a CSV.
+
+    Args:
+        Schema ([type]): Header Check
+        Validity ([type]): Entity Field Checks
+    """
+    def __init__(self, csv_in: str, csv_out: str, ilx_cli):
+        Schema.__init__(self)
+        Validity.__init__(self, ilx_cli)
+        self.csv_in_path = pathing(csv_in, new=False)
+        self.csv_out_path = pathing(csv_out, new=False).with_suffix('.csv')
+        self.csv_in_df = pd.read_csv(self.csv_in_path)
+        self.check_header(self.csv_in_df.columns)
+        
+    def expand_synonyms(self, synonyms: list) -> List[str]:
+        """
+        Makes sure synonyms delimited with a comma are counted as a list
+
+        Args:
+            synonyms (list): Alternate labels delimited by a comma
+
+        Returns:
+            list: list of synonyms
+        """
+        synonyms = [syn.strip() for syn in synonyms.split(',')]
+        return synonyms
+    
+    def expand_curie(self, curie: str, preferred: str) -> list[dict]:
+        """
+        Expand curie to its iri to create an existing_id dictionary 
+
+        Args:
+            curie (str): Existing Ids for the entity in the prefix:id format.
+            preferred (str): True if curie is preferred ID for entity.
+
+        Returns:
+            list[dict]: existing_id entry ready for server.
+        """
         prefix, _id = curie.rsplit(':', 1)
         namespace = self.prefix2namespace[prefix]
         existing_ids = [{
@@ -133,24 +260,25 @@ class IngestCSV(Schema):
         }]
         return existing_ids
 
-    def check_superclass(self, superclass):
-        if any([superclass.startswith(prefix) for prefix in ['ILX:', 'TMP:', 'ilx_', 'tmp_']]):
-            result = self.ilx_cli.get_entity(superclass)
-        else:
-            error = self.check_curie(superclass)
-            if error:
-                return error
-            result = self.ilx_cli.get_entity_from_curie(superclass)
-        if not result['ilx']:
-            return f'Superclass {superclass} does not exist in InterLex.'
-
     def ingest_csv(self) -> None:
+        """
+        Iterate through the CSV and validate each field. If no checks are raised the entity is added.
+
+        Returns:
+            pd.DataFrame: pandas dataframe to be converted back into a CSV.
+        """
         df = self.csv_in_df.copy()
         df['error'] = None
         df['success'] = None
         df['InterLex Fragment'] = None
         for i, row in self.csv_in_df.iterrows():
-            error = self.check_curie(row.curie)
+            synonyms = self.expand_synonyms(row.synonyms)
+            error = self.check_synonym_duplicates(synonyms)
+            if error:
+                df.at[i, 'error'] = error
+                df.at[i, 'success'] = 'F'
+                continue
+            error = self.check_curie_existence(row.curie)
             if error:
                 df.at[i, 'error'] = error
                 df.at[i, 'success'] = 'F'
@@ -160,9 +288,9 @@ class IngestCSV(Schema):
                 df.at[i, 'error'] = error
                 df.at[i, 'success'] = 'F'
                 continue
-            result = self.check_if_duplicate(row) 
-            if result:
-                df.at[i, 'error'] = self.error.format(label=result['label'], user=result['uid'], ilx_id=result['ilx'])
+            error = self.check_label_duplicate(row.label) 
+            if error:
+                df.at[i, 'error'] = error
                 df.at[i, 'success'] = 'F'
             else:
                 df.at[i, 'error'] = None
@@ -172,12 +300,13 @@ class IngestCSV(Schema):
                     type=row['type'],
                     definition=row['definition'],
                     comment=row['comment'],
-                    synonyms=self.expand_synonyms(row.synonyms),
+                    synonyms=synonyms,
                     superclass=row['superclass'],
                     existing_ids=self.expand_curie(row.curie, row.preferred)
                 )
-            df.at[i, 'InterLex Fragment'] = result['ilx']
+                df.at[i, 'InterLex Fragment'] = result['ilx']
         return df
+
 
 class IngestGSheet(Schema):
     pass
@@ -185,7 +314,6 @@ class IngestGSheet(Schema):
 
 if __name__ == '__main__':
     doc = docopt(__doc__, version=VERSION) 
-    print(doc)
     ilx_cli = interlex_client('scicrunch.org') if doc['--production'] else interlex_client()
     ilx_cli = ilx_cli.ilx_cli  # Simple InterLex API
     if doc['--csv']:
