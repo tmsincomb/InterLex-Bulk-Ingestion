@@ -240,7 +240,7 @@ class IngestCSV(Schema, Validity):
         synonyms = [syn.strip() for syn in synonyms.split(',')]
         return synonyms
     
-    def expand_curie(self, curie: str, preferred: str) -> list[dict]:
+    def expand_curie(self, curie: str, preferred: str) -> list:
         """
         Expand curie to its iri to create an existing_id dictionary 
 
@@ -249,7 +249,7 @@ class IngestCSV(Schema, Validity):
             preferred (str): True if curie is preferred ID for entity.
 
         Returns:
-            list[dict]: existing_id entry ready for server.
+            list: existing_id entry ready for server.
         """
         prefix, _id = curie.rsplit(':', 1)
         namespace = self.prefix2namespace[prefix]

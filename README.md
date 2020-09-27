@@ -10,9 +10,11 @@ interlex-bulk-ingest gsheet <gsheet-name> <sheet-name>
 ```
 
 # Options
-```bash
--h --help                      Display this help message
--v --version                   Current version of file
+```
+-h --help             Display this help message
+-v --version          Current version of file
+-c --csv              Use CSV   
+-g --gsheet           Use Google Sheets 
 ```
 # Example
 ```bash
@@ -49,4 +51,4 @@ interlex-bulk-ingest -g <gsheets name> <sheet name>
     Google Sheets - ingestion will update the sheet given automatically.
 | *label* | *type* | *synonyms* | *definition* | *comment* | *superclass* | *curie* | *preferred* | *InterLex Fragment* | *InterLex IRI* | *success* | *error* | 
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Brain | term | Synganglion, Encephalon | The part of the central nervous system contained within the cranium comprising the forebrain, midbrain, hindbrain, and metencephalon | Does not include retina. | ILX:0108124 | UBERON:0000062 | T | | | F | Label [Brain] already added by User [Troy Sincomb] With InterLex ID [http://uri.interlex.org/base/ilx_0101431] |
+| Brain | term | Synganglion, Encephalon | The part of the central nervous system contained within the cranium comprising the forebrain, midbrain, hindbrain, and metencephalon | Does not include retina. | ILX:0108124 | UBERON:0000062 | T | ILX:0101431 | http://uri.interlex.org/base/ilx_0101431 | F | Label [Brain] already added by User [Troy Sincomb] With InterLex ID [http://uri.interlex.org/base/ilx_0101431] |

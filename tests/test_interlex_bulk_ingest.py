@@ -1,9 +1,11 @@
 import unittest
+import sys
 
 from ontquery.interlex import interlex_client
 import pandas as pd
 import pytest
 
+sys.path.insert(1, '../interlex_bulk_ingestion')
 from interlex_bulk_ingest import IngestCSV, Schema, IngestGSheet, Validity
 
 
@@ -66,14 +68,6 @@ class TestValidity:
         fake_curie = 'UBERON:FakeID'
         assert self.validity.check_curie_existence(fake_curie) == None
 
-    def test_check_label_duplicate(self):
-        label = 'Brain'
-        uid = '32290'
-        error = self.validity.label_already_exists.format(label=label, ilx_id='ilx_0101431')
-        assert self.validity.check_label_duplicate(label, uid=uid) == error
-        fake_label = 'FAKELABEL'
-        assert self.validity.check_label_duplicate(fake_label, uid=uid) == None
-         
     def test_check_label_duplicate(self):
         label = 'Brain'
         uid = '32290'
